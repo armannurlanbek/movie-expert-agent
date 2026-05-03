@@ -53,10 +53,8 @@ def search_movie_list(search_query: str):
 
 def get_top_movies_by_genre(genre: str, limit: int = 5):
     try:
-        # 1) filter rows where Genre contains the genre string
         filtered = df[df["Genre"].str.contains(genre, case=False, na=False)].copy()
 
-        # handle empty results
         if filtered.empty:
             return json.dumps(
                 {
@@ -67,18 +65,13 @@ def get_top_movies_by_genre(genre: str, limit: int = 5):
                 }
             )
 
-        # 2) sort by IMDB_Rating descending
         filtered = filtered.sort_values("IMDB_Rating", ascending=False)
-
-        # 3) take top `limit` rows
         filtered = filtered.head(limit)
 
-        # 4) select relevant columns
         result = filtered[
             ["Series_Title", "Released_Year", "Genre", "IMDB_Rating", "Director", "Overview"]
         ]
 
-        # 5) return as JSON string
         return result.to_json(orient="records", force_ascii=True)
     except Exception as e:
         return f"Error: {str(e)}"
@@ -158,41 +151,3 @@ tool_registry = {
     "search_movie_list": search_movie_list,
     "get_top_movies_by_genre": get_top_movies_by_genre,
 }
-#Tools for agent
-from agents import function_tool
-
-
-tools = [
-    {
-        "type": "function",
-        "name": "search_movie",
-        "description": "Search for a movie by title",
-        "parameters": {
-            "type": "object",
-            "properties": {"title": {"type": "string"}},
-            "required": ["title"]
-        }
-    }
-]
-
-def search_movie(title: str):
-    return f"{title}: one of the best movies of all time maaan"
-
-
-@function_tool
-def search_movie_list(query: str):
-    return None
-
-@function_tool
-def compare_movies(title1: str, title2: str):
-    return None
-
-@function_tool
-def get_movies_by_genre(genre: str):
-    return None
-
-@function_tool
-def filter_by_rating(min_rating:int):
-    return Non
-
-
