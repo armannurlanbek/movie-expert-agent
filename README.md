@@ -31,49 +31,42 @@ Implemented without LangChain:
 The following examples are taken from the actual run in `dialogue_test.md`.
 The file `dialogue_test.md` contains a copy-paste transcript of the dialogue session.
 
-### Example 1: Top 10 action movies + compare top 2
+### Example 1: Top 10 action movies
 **User input**
-`Please give me top 10 action movies and then search up top 2 and compare them`
-
-**Tool calls**
-- `get_top_movies_by_genre({'genre': 'action', 'limit': 10})`
-- `search_movie({'title': 'The Dark Knight', 'plot': 'full'})`
-- `search_movie({'title': 'The Lord of the Rings: The Return of the King', 'plot': 'full'})`
-
-**Final answer (excerpt)**
-- Top list includes: `The Dark Knight`, `The Lord of the Rings: The Return of the King`, `Inception`, `The Matrix`, and others.
-- Comparison includes runtime, genre, director, cast, IMDb rating, awards, and box office.
-
-### Example 2: Spider-Man movie list
-**User input**
-`Give me list of spider man movies`
+`дай мне топ 10 экшн фильмов`
 
 **Tool call**
-- `search_movie_list({'search_query': 'Spider-Man'})`
+- `get_top_movies_by_genre({'genre': 'Action', 'limit': 10})`
 
 **Final answer (excerpt)**
-- `Spider-Man: No Way Home` (2021)
-- `Spider-Man` (2002)
-- `Spider-Man: Homecoming` (2017)
-- `Spider-Man 2` (2004)
-- `Spider-Man: Into the Spider-Verse` (2018)
-- `The Amazing Spider-Man` (2012)
-- `Spider-Man 3` (2007)
-- `Spider-Man: Far From Home` (2019)
-- `The Amazing Spider-Man 2` (2014)
-- `Spider-Man: Across the Spider-Verse` (2023)
+- The agent returns a Russian-language top-10 list, including `The Dark Knight`, `The Lord of the Rings: The Return of the King`, `Inception`, and `The Matrix`.
+
+### Example 2: Spider-Man list + top 2 comparison
+**User input**
+`дай мне лист фильмов про человека паука и потом сделай поиск по топ 2 из них и сравни`
+
+**Tool calls**
+- `search_movie_list({'search_query': 'Spider-Man'})`
+- `search_movie({'title': 'Spider-Man: No Way Home', 'plot': 'short'})`
+- `search_movie({'title': 'Spider-Man', 'plot': 'short'})`
+
+**Final answer (excerpt)**
+- Returns a Russian-language list of Spider-Man movies.
+- Adds a side-by-side comparison of `Spider-Man: No Way Home` and `Spider-Man` (2002) with rating, runtime, genres, awards, and box office.
 
 ### Example 3: Memory check
 **Earlier user input**
-`Hello my name is Arman`
+`Привет меня зовут Арман`
 
 **Later user input**
-`what is my name and what we talked about in this chat?`
+`Как меня зовут и что я тебя спрашивал?`
 
 **Agent final answer**
-`Your name is Arman, and in this chat, we discussed movies, particularly focusing on a list of Spider-Man films.`
+`Вас зовут Арман, и вы спрашивали о рекомендациях топ-10 экшн-фильмов. Позже вы запросили список фильмов про Человека-Паука и сравнение двух из них.`
 
 ## Notes
 - This project is a terminal-based chatbot (`agent.py`).
 - Tool implementations and tool schema are in `tools.py`.
 - The local CSV is used for genre-based ranking only.
+
+Git link: https://github.com/armannurlanbek/movie-expert-agent

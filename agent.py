@@ -17,7 +17,7 @@ input_list = []
 
 # Outer loop: keep chat session running until user stops program.
 while True:
-    user_input = input("Ask a question...")
+    user_input = input("Ask a question: ")
     input_list.append({"role": "user", "content": f"{user_input}"})
     # Inner loop: keep resolving tool calls until model returns plain text.
     while True:
@@ -35,7 +35,12 @@ while True:
         tool_calls = [item for item in response.output if item.type == "function_call"]
 
         if not tool_calls:
+            print(f"\n[REASONING] Direct response — using conversation context")
+            print(f"[RESPONSE PREVIEW] {response.output_text[:80]}...")
             break
+
+        if tool_calls:
+            print(f"\n[REASONING] Decided to call {len(tool_calls)} tool(s): {[t.name for t in tool_calls]}")
 
         # Execute each requested tool and return outputs back to the model.
         for item in tool_calls:
