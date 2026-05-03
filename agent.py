@@ -3,9 +3,12 @@ import os
 from dotenv import load_dotenv
 import json
 import requests
+import pandas as pd
 
 
 load_dotenv()
+
+df = pd.read_csv("imdb_top_1000.csv")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 imdb_key = os.getenv("IMDB_KEY")
@@ -47,6 +50,38 @@ def search_movie_list(search_query: str):
         return f"Network error when searching for '{search_query}': {str(e)}"
     except Exception as e:
         return f"Unexpected error: {str(e)}"
+
+def get_top_movies_by_genre(genre: str, limit: int = 5):
+    try:
+        # 1) filter rows where Genre contains the genre string
+        filtered = df[df["Genre"].str.contains(genre, case=False, na=False)].copy()
+
+        # handle empty results
+        if filtered.empty:
+            return json.dumps(
+                {
+                    "genre": genre,
+                    "count": 0,
+                    "movies": [],
+                    "message": f"No movies found for genre '{genre}'.",
+                }
+            )
+
+        # 2) sort by IMDB_Rating descending
+        filtered = filtered.sort_values("IMDB_Rating", ascending=False)
+
+        # 3) take top `limit` rows
+        filtered = filtered.head(limit)
+
+        # 4) select relevant columns
+        result = filtered[
+            ["Series_Title", "Released_Year", "Genre", "IMDB_Rating", "Director", "Overview"]
+        ]
+
+        # 5) return as JSON string
+        return result.to_json(orient="records", force_ascii=True)
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 tools = [
     {
@@ -91,11 +126,35 @@ tools = [
             "required": ["search_query"],
         },
     },
+    {
+        "type": "function",
+        "name": "get_top_movies_by_genre",
+        "description": (
+            "The tool returns multiple top-rated movies for the user's genre query. "
+            "It is not title search; it filters the local dataset by genre and ranks by IMDB_Rating."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "genre": {
+                    "type": "string",
+                    "description": "Genre string to match in the Genre column.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max number of movies to return. Defaults to 5.",
+                    "minimum": 1,
+                },
+            },
+            "required": ["genre"],
+        },
+    },
 ]
 
 tool_registry = {
     "search_movie": search_movie,
-    "search_movie_list": search_movie_list
+    "search_movie_list": search_movie_list,
+    "get_top_movies_by_genre": get_top_movies_by_genre
 }
 
 input_list = []
@@ -120,30 +179,25 @@ while True:
             break
 
         for item in tool_calls:
-            if item.name == "search_movie":
-                title = json.loads(item.arguments)["title"]
-                plot = json.loads(item.arguments)["plot"]
-                movie = search_movie(title, plot)
+            print(f"\n[TOOL CALL] {item.name}({json.loads(item.arguments)})")
+            func = tool_registry.get(item.name)
 
-                input_list.append({
-                    "type": "function_call_output",
+            if func is None:
+                result = f"Unknown tool: {item.name}"
+            
+            args = json.loads(item.arguments)
+            result = func(**args)
 
-                    "call_id": item.call_id,
-                    "output": movie
-                })
+            input_list.append({
+               "type": "function_call_output",
+               "call_id": item.call_id,
+               "output": result 
+            })
+            print(f"[TOOL RESULT] {result[:100]}...")
     
     print("Final answer: " + response.output_text)
 
     if len(input_list) > 11:
-        # oldest_messages = input_list[0:4]
-        # sum_response = client.responses.create(
-        #     model = "gpt-4o-mini",
-        #     instructions = f"You are AI agent summarizer. Your task is to summarize the oldest 5 messages into one summarized message.",
-        #     input = f"Summarize these messages: {oldest_messages}"
-        # )
-
-        # del input_list[0:4]
-        # input_list.insert(0, {"role": "user", "content": f"Summary of earlier conversation: {sum_response.output_text}"})
 
         user_indices = [i for i, m in enumerate(input_list) 
                 if isinstance(m, dict) and m.get("role") == "user"]
