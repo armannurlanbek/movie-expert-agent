@@ -29,6 +29,7 @@ Implemented without LangChain:
 ## Dialogue Examples
 
 The following examples are taken from the actual run in `dialogue_test.md`.
+The file `dialogue_test.md` contains a copy-paste transcript of the dialogue session.
 
 ### Example 1: Top 10 action movies + compare top 2
 **User input**

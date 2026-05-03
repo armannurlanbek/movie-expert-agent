@@ -5,16 +5,21 @@ import json
 from tools import tool_registry, tools
 
 
+# Load env vars once before creating clients.
 load_dotenv()
 
+# Initialize API clients/keys used by the agent loop.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 imdb_key = os.getenv("IMDB_KEY")
 
+# Conversation state sent to the Responses API.
 input_list = []
 
+# Outer loop: keep chat session running until user stops program.
 while True:
     user_input = input("Ask a question...")
     input_list.append({"role": "user", "content": f"{user_input}"})
+    # Inner loop: keep resolving tool calls until model returns plain text.
     while True:
 
         response = client.responses.create(
@@ -26,11 +31,13 @@ while True:
         input_list += response.output
 
 
+        # Extract only function calls from model output.
         tool_calls = [item for item in response.output if item.type == "function_call"]
 
         if not tool_calls:
             break
 
+        # Execute each requested tool and return outputs back to the model.
         for item in tool_calls:
             print(f"\n[TOOL CALL] {item.name}({json.loads(item.arguments)})")
             func = tool_registry.get(item.name)
@@ -48,8 +55,10 @@ while True:
             })
             print(f"[TOOL RESULT] {result[:100]}...")
     
+    # Print final natural-language answer after tool loop completes.
     print("Final answer: " + response.output_text)
 
+    # Trim long histories by summarizing older turns.
     if len(input_list) > 11:
 
         user_indices = [i for i, m in enumerate(input_list) 
@@ -60,6 +69,7 @@ while True:
             messages_to_summarize = input_list[:cut_at]
             messages_to_keep = input_list[cut_at:]
 
+            # Create a compact summary to reduce token usage.
             sum_response = client.responses.create(
                 model = "gpt-4o-mini",
                 instructions = f"You are AI agent summarizer. Your task is to summarize the oldest 5 messages into one summarized message.",

@@ -5,13 +5,16 @@ import pandas as pd
 from dotenv import load_dotenv
 
 
+# Load environment config used by API-backed tools.
 load_dotenv()
 
+# Preload local IMDB dataset and external API key.
 df = pd.read_csv("imdb_top_1000.csv")
 imdb_key = os.getenv("IMDB_KEY")
 
 
 def search_movie(title: str, plot: str):
+    # Exact-title OMDb lookup with optional full plot.
     try:
         if plot == "short":
             response = requests.get(f"http://www.omdbapi.com/?t={title}&apikey={imdb_key}")
@@ -34,6 +37,7 @@ def search_movie(title: str, plot: str):
 
 
 def search_movie_list(search_query: str):
+    # OMDb keyword search that can return multiple matches.
     try:
         response = requests.get(f"http://www.omdbapi.com/?s={search_query}&apikey={imdb_key}")
 
@@ -52,6 +56,7 @@ def search_movie_list(search_query: str):
 
 
 def get_top_movies_by_genre(genre: str, limit: int = 5):
+    # Filter local dataset by genre and rank by rating.
     try:
         filtered = df[df["Genre"].str.contains(genre, case=False, na=False)].copy()
 
@@ -77,6 +82,7 @@ def get_top_movies_by_genre(genre: str, limit: int = 5):
         return f"Error: {str(e)}"
 
 
+# Tool definitions exposed to the OpenAI Responses API.
 tools = [
     {
         "type": "function",
@@ -146,6 +152,7 @@ tools = [
 ]
 
 
+# Runtime map from tool name to Python callable.
 tool_registry = {
     "search_movie": search_movie,
     "search_movie_list": search_movie_list,
